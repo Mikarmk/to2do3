@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кто хочет стать миллионером - История России</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .title {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #87ceeb;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .info-panel {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .question-counter {
+            font-size: 1.5em;
+            color: #ffd700;
+        }
+
+        .lives {
+            font-size: 1.2em;
+            color: #ff6b6b;
+        }
+
+        .hints {
+            font-size: 1.2em;
+            color: #4ecdc4;
+        }
+
+        .question-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 2px solid #ffd700;
+        }
+
+        .question {
+            font-size: 1.8em;
+            text-align: center;
+            margin-bottom: 30px;
+            line-height: 1.4;
+            color: #ffffff;
+        }
+
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .answer-btn {
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            border: 2px solid #3498db;
+            color: white;
+            padding: 20px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .answer-btn:hover {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .answer-btn.selected {
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+            border-color: #ffd700;
+        }
+
+        .answer-btn.correct {
+            background: linear-gradient(145deg, #27ae60, #2ecc71);
+            border-color: #2ecc71;
+        }
+
+        .answer-btn.incorrect {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            border-color: #e74c3c;
+        }
+
+        .answer-btn.hidden {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: linear-gradient(145deg, #8e44ad, #9b59b6);
+            border: none;
+            color: white;
+            padding: 15px 25px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+
+        .control-btn:hover {
+            background: linear-gradient(145deg, #9b59b6, #8e44ad);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.4);
+        }
+
+        .control-btn:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .game-over {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            display: none;
+        }
+
+        .game-over h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        .final-score {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+        }
+
+        .restart-btn {
+            background: linear-gradient(145deg, #27ae60, #2ecc71);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .restart-btn:hover {
+            background: linear-gradient(145deg, #2ecc71, #27ae60);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+        }
+
+        .prize-ladder {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            margin-top: 20px;
+        }
+
+        .prize-level {
+            padding: 8px;
+            margin: 2px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .prize-level.current {
+            background: #ffd700;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .prize-level.completed {
+            background: #27ae60;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2em;
+            }
+            
+            .answers-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .game-info {
+                flex-direction: column;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1 class="title">Кто хочет стать миллионером?</h1>
+            <p class="subtitle">История России</p>
+        </div>
+
+        <div class="game-info">
+            <div class="info-panel">
+                <div class="question-counter">Вопрос: <span id="currentQuestion">1</span> из 10</div>
+            </div>
+            <div class="info-panel">
+                <div class="lives">Жизни: <span id="livesCount">1</span></div>
+            </div>
+            <div class="info-panel">
+                <div class="hints">Подсказки 50/50: <span id="hintsCount">4</span></div>
+            </div>
+        </div>
+
+        <div id="gameArea">
+            <div class="question-container">
+                <div class="question" id="questionText">
+                    Загрузка вопроса...
+                </div>
+                <div class="answers-grid" id="answersGrid">
+                    <button class="answer-btn" id="answerA">A: </button>
+                    <button class="answer-btn" id="answerB">B: </button>
+                    <button class="answer-btn" id="answerC">C: </button>
+                    <button class="answer-btn" id="answerD">D: </button>
+                </div>
+                <div class="controls">
+                    <button class="control-btn" id="fiftyFiftyBtn">50/50</button>
+                    <button class="control-btn" id="submitBtn" disabled>Ответить</button>
+                </div>
+            </div>
+
+            <div class="prize-ladder">
+                <h3 style="text-align: center; margin-bottom: 15px; color: #ffd700;">Призовая лестница</h3>
+                <div class="prize-level" id="level10">10. 1 000 000 ₽</div>
+                <div class="prize-level" id="level9">9. 500 000 ₽</div>
+                <div class="prize-level" id="level8">8. 250 000 ₽</div>
+                <div class="prize-level" id="level7">7. 125 000 ₽</div>
+                <div class="prize-level" id="level6">6. 64 000 ₽</div>
+                <div class="prize-level" id="level5">5. 32 000 ₽</div>
+                <div class="prize-level" id="level4">4. 16 000 ₽</div>
+                <div class="prize-level" id="level3">3. 8 000 ₽</div>
+                <div class="prize-level" id="level2">2. 4 000 ₽</div>
+                <div class="prize-level current" id="level1">1. 1 000 ₽</div>
+            </div>
+        </div>
+
+        <div class="game-over" id="gameOver">
+            <h2 id="gameOverTitle">Игра окончена!</h2>
+            <div class="final-score" id="finalScore">Ваш выигрыш: 0 ₽</div>
+            <button class="restart-btn" onclick="restartGame()">Играть снова</button>
+        </div>
+    </div>
+
+    <script>
+        // Вопросы по истории России
+        const questions = [
+            {
+                question: "В каком году произошло Крещение Руси?",
+                answers: ["980 г.", "988 г.", "990 г.", "995 г."],
+                correct: 1
+            },
+            {
+                question: "Кто основал Москву?",
+                answers: ["Иван Грозный", "Юрий Долгорукий", "Владимир Мономах", "Ярослав Мудрый"],
+                correct: 1
+            },
+            {
+                question: "В каком году началось монголо-татарское иго на Руси?",
+                answers: ["1237 г.", "1240 г.", "1242 г.", "1245 г."],
+                correct: 0
+            },
+            {
+                question: "Кто победил в Куликовской битве?",
+                answers: ["Мамай", "Дмитрий Донской", "Иван Калита", "Александр Невский"],
+                correct: 1
+            },
+            {
+                question: "В каком году было свергнуто монголо-татарское иго?",
+                answers: ["1478 г.", "1480 г.", "1485 г.", "1490 г."],
+                correct: 1
+            },
+            {
+                question: "Кто был первым царем всея Руси?",
+                answers: ["Иван III", "Иван IV Грозный", "Василий III", "Борис Годунов"],
+                correct: 1
+            },
+            {
+                question: "В каком году началось правление династии Романовых?",
+                answers: ["1610 г.", "1612 г.", "1613 г.", "1615 г."],
+                correct: 2
+            },
+            {
+                question: "Кто провел церковную реформу в XVII веке, вызвавшую раскол?",
+                answers: ["Патриарх Никон", "Протопоп Аввакум", "Патриарх Филарет", "Патриарх Иоасаф"],
+                correct: 0
+            },
+            {
+                question: "В каком году Петр I основал Санкт-Петербург?",
+                answers: ["1700 г.", "1703 г.", "1705 г.", "1709 г."],
+                correct: 1
+            },
+            {
+                question: "Кто из русских императоров получил прозвище 'Великий'?",
+                answers: ["Петр I", "Екатерина II", "Александр I", "Оба первых варианта"],
+                correct: 3
+            }
+        ];
+
+        const prizes = [1000, 4000, 8000, 16000, 32000, 64000, 125000, 250000, 500000, 1000000];
+
+        let currentQuestionIndex = 0;
+        let selectedAnswer = null;
+        let lives = 3;
+        let hintsLeft = 4;
+        let gameEnded = false;
+        let currentPrize = 0;
+
+        function initGame() {
+            currentQuestionIndex = 0;
+            selectedAnswer = null;
+            lives = 3;
+            hintsLeft = 4;
+            gameEnded = false;
+            currentPrize = 0;
+            
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('gameOver').style.display = 'none';
+            
+            updateUI();
+            loadQuestion();
+        }
+
+        function updateUI() {
+            document.getElementById('currentQuestion').textContent = currentQuestionIndex + 1;
+            document.getElementById('livesCount').textContent = lives;
+            document.getElementById('hintsCount').textContent = hintsLeft;
+            document.getElementById('fiftyFiftyBtn').disabled = hintsLeft === 0;
+            
+            // Обновляем призовую лестницу
+            for (let i = 0; i < 10; i++) {
+                const level = document.getElementById(`level${i + 1}`);
+                level.className = 'prize-level';
+                if (i < currentQuestionIndex) {
+                    level.classList.add('completed');
+                } else if (i === currentQuestionIndex) {
+                    level.classList.add('current');
+                }
+            }
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                endGame(true);
+                return;
+            }
+
+            const question = questions[currentQuestionIndex];
+            document.getElementById('questionText').textContent = question.question;
+            
+            const answerButtons = ['answerA', 'answerB', 'answerC', 'answerD'];
+            answerButtons.forEach((id, index) => {
+                const btn = document.getElementById(id);
+                btn.textContent = `${String.fromCharCode(65 + index)}: ${question.answers[index]}`;
+                btn.className = 'answer-btn';
+                btn.onclick = () => selectAnswer(index);
+            });
+
+            selectedAnswer = null;
+            document.getElementById('submitBtn').disabled = true;
+        }
+
+        function selectAnswer(index) {
+            if (gameEnded) return;
+
+            // Убираем выделение с предыдущего ответа
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+
+            // Выделяем выбранный ответ
+            const answerButtons = ['answerA', 'answerB', 'answerC', 'answerD'];
+            document.getElementById(answerButtons[index]).classList.add('selected');
+            
+            selectedAnswer = index;
+            document.getElementById('submitBtn').disabled = false;
+        }
+
+        function submitAnswer() {
+            if (selectedAnswer === null || gameEnded) return;
+
+            const question = questions[currentQuestionIndex];
+            const answerButtons = ['answerA', 'answerB', 'answerC', 'answerD'];
+            
+            // Показываем правильный и неправильный ответы
+            answerButtons.forEach((id, index) => {
+                const btn = document.getElementById(id);
+                if (index === question.correct) {
+                    btn.classList.add('correct');
+                } else if (index === selectedAnswer) {
+                    btn.classList.add('incorrect');
+                }
+            });
+
+            setTimeout(() => {
+                if (selectedAnswer === question.correct) {
+                    // Правильный ответ
+                    currentPrize = prizes[currentQuestionIndex];
+                    currentQuestionIndex++;
+                    
+                    if (currentQuestionIndex >= questions.length) {
+                        endGame(true);
+                    } else {
+                        updateUI();
+                        loadQuestion();
+                    }
+                } else {
+                    // Неправильный ответ
+                    if (lives > 0) {
+                        lives--;
+                        updateUI();
+                        
+                        if (lives === 0) {
+                            endGame(false);
+                        } else {
+                            alert('Неправильно! У вас осталась одна попытка.');
+                            loadQuestion();
+                        }
+                    } else {
+                        endGame(false);
+                    }
+                }
+            }, 2000);
+        }
+
+        function useFiftyFifty() {
+            if (hintsLeft === 0 || gameEnded) return;
+
+            hintsLeft--;
+            const question = questions[currentQuestionIndex];
+            const correctAnswer = question.correct;
+            const answerButtons = ['answerA', 'answerB', 'answerC', 'answerD'];
+            
+            // Создаем массив индексов неправильных ответов
+            let wrongAnswers = [];
+            for (let i = 0; i < 4; i++) {
+                if (i !== correctAnswer) {
+                    wrongAnswers.push(i);
+                }
+            }
+            
+            // Случайно выбираем 2 неправильных ответа для скрытия
+            const toHide = [];
+            for (let i = 0; i < 2; i++) {
+                const randomIndex = Math.floor(Math.random() * wrongAnswers.length);
+                toHide.push(wrongAnswers[randomIndex]);
+                wrongAnswers.splice(randomIndex, 1);
+            }
+            
+            // Скрываем выбранные неправильные ответы
+            toHide.forEach(index => {
+                document.getElementById(answerButtons[index]).classList.add('hidden');
+            });
+
+            updateUI();
+        }
+
+        function endGame(won) {
+            gameEnded = true;
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'block';
+            
+            if (won) {
+                document.getElementById('gameOverTitle').textContent = 'Поздравляем! Вы выиграли!';
+                if (currentPrize === 1000000) {
+                    document.getElementById('finalScore').innerHTML = `Ваш выигрыш: ${currentPrize.toLocaleString()} ₽<br><br><strong style="color: #ffd700; font-size: 1.2em;">🎉 СЕКРЕТНЫЙ КОД: milioner123 🎉</strong>`;
+                } else {
+                    document.getElementById('finalScore').textContent = `Ваш выигрыш: ${currentPrize.toLocaleString()} ₽`;
+                }
+            } else {
+                document.getElementById('gameOverTitle').textContent = 'Игра окончена!';
+                const previousPrize = currentQuestionIndex > 0 ? prizes[currentQuestionIndex - 1] : 0;
+                document.getElementById('finalScore').textContent = `Ваш выигрыш: ${previousPrize.toLocaleString()} ₽`;
+            }
+        }
+
+        function restartGame() {
+            initGame();
+        }
+
+        // Привязываем события
+        document.getElementById('submitBtn').onclick = submitAnswer;
+        document.getElementById('fiftyFiftyBtn').onclick = useFiftyFifty;
+
+        // Запускаем игру
+        initGame();
+    </script>
+</body>
+</html>

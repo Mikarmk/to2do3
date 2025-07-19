@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра с движением</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .game-container {
+            text-align: center;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(9, 50px);
+            grid-template-rows: repeat(9, 50px);
+            gap: 2px;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 20px auto;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-size: 24px;
+        }
+
+        .wall {
+            background-color: #888;
+        }
+
+        .river {
+            background-color: #4a90e2;
+        }
+
+        .bridge {
+            background-color: #ffa500;
+        }
+
+        .bomb {
+            background-color: #ff4444;
+        }
+
+        .exploded-bomb {
+            background-color: #aa2222;
+            color: white;
+        }
+
+        .finish {
+            background-color: #44ff44;
+        }
+
+        .player {
+            width: 30px;
+            height: 30px;
+            background-color: #0066ff;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .message {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px;
+            height: 30px;
+            color: #333;
+        }
+
+        .controls {
+            margin: 20px;
+            font-size: 16px;
+        }
+
+        .hidden-wall {
+            background-color: white;
+        }
+
+        .revealed-wall {
+            background-color: #888;
+            animation: wallReveal 0.5s ease-in-out;
+        }
+
+        @keyframes wallReveal {
+            0% { background-color: white; }
+            50% { background-color: #ff6666; }
+            100% { background-color: #888; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Игра с движением</h1>
+        <div class="message" id="message"></div>
+        <div class="game-board" id="gameBoard"></div>
+        <div class="controls">
+            Используйте стрелки для движения<br>
+            Избегайте стен, реки и бомб!
+        </div>
+    </div>
+
+    <script>
+        class Game {
+            constructor() {
+                this.boardSize = 9;
+                this.playerPos = { x: 4, y: 8 }; // Начальная позиция игрока
+                this.gameBoard = document.getElementById('gameBoard');
+                this.messageEl = document.getElementById('message');
+                this.isMoving = false;
+                
+                // Карта уровня согласно картинке
+                this.levelMap = [
+                    ['wall', 'wall', 'wall', 'finish', 'bomb', 'wall', 'wall', 'wall', 'wall'],
+                    ['wall', 'bomb', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty', 'wall'],
+                    ['wall', 'empty', 'empty', 'wall', 'bomb', 'wall', 'bomb', 'empty', 'wall'],
+                    ['wall', 'empty', 'empty', 'empty', 'empty', 'wall', 'wall', 'empty', 'wall'],
+                    ['wall', 'wall', 'wall', 'wall', 'empty', 'bomb', 'empty', 'empty', 'wall'],
+                    ['wall', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty', 'bomb', 'wall'],
+                    ['wall', 'river', 'bridge', 'river', 'river', 'bridge', 'river', 'empty', 'wall'],
+                    ['wall', 'empty', 'empty', 'bomb', 'empty', 'empty', 'empty', 'bomb', 'wall'],
+                    ['wall', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty', 'wall']
+                ];
+
+                this.explodedBombs = new Set();
+                this.revealedWalls = new Set();
+                
+                this.initBoard();
+                this.bindEvents();
+            }
+
+            initBoard() {
+                this.gameBoard.innerHTML = '';
+                
+                for (let y = 0; y < this.boardSize; y++) {
+                    for (let x = 0; x < this.boardSize; x++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.x = x;
+                        cell.dataset.y = y;
+                        
+                        const cellType = this.levelMap[y][x];
+                        
+                        // Стены изначально скрыты (кроме видимых)
+                        if (cellType === 'wall') {
+                            if (x === 0 || x === 8 || this.revealedWalls.has(`${x},${y}`)) {
+                                cell.classList.add('wall');
+                            } else {
+                                cell.classList.add('hidden-wall');
+                            }
+                        } else if (cellType === 'river') {
+                            cell.classList.add('river');
+                        } else if (cellType === 'bridge') {
+                            cell.classList.add('bridge');
+                        } else if (cellType === 'bomb') {
+                            if (this.explodedBombs.has(`${x},${y}`)) {
+                                cell.classList.add('exploded-bomb');
+                                cell.textContent = '💥';
+                            }
+                            // Бомбы невидимы до взрыва - выглядят как обычные пустые клетки
+                        } else if (cellType === 'finish') {
+                            cell.classList.add('finish');
+                        }
+                        
+                        // Добавляем игрока
+                        if (x === this.playerPos.x && y === this.playerPos.y) {
+                            const player = document.createElement('div');
+                            player.className = 'player';
+                            cell.appendChild(player);
+                        }
+                        
+                        this.gameBoard.appendChild(cell);
+                    }
+                }
+            }
+
+            bindEvents() {
+                document.addEventListener('keydown', (e) => {
+                    if (this.isMoving) return;
+                    
+                    let newX = this.playerPos.x;
+                    let newY = this.playerPos.y;
+                    
+                    switch(e.key) {
+                        case 'ArrowUp':
+                            newY--;
+                            break;
+                        case 'ArrowDown':
+                            newY++;
+                            break;
+                        case 'ArrowLeft':
+                            newX--;
+                            break;
+                        case 'ArrowRight':
+                            newX++;
+                            break;
+                        default:
+                            return;
+                    }
+                    
+                    e.preventDefault();
+                    this.movePlayer(newX, newY);
+                });
+            }
+
+            movePlayer(newX, newY) {
+                // Проверка границ
+                if (newX < 0 || newX >= this.boardSize || newY < 0 || newY >= this.boardSize) {
+                    return;
+                }
+
+                const cellType = this.levelMap[newY][newX];
+                
+                // Проверка столкновений
+                if (cellType === 'wall') {
+                    this.revealWall(newX, newY);
+                    this.restartGame();
+                    return;
+                } else if (cellType === 'river') {
+                    this.restartGame();
+                    return;
+                } else if (cellType === 'bomb' && !this.explodedBombs.has(`${newX},${newY}`)) {
+                    this.explodeBomb(newX, newY);
+                    this.restartGame();
+                    return;
+                } else if (cellType === 'finish') {
+                    this.playerPos.x = newX;
+                    this.playerPos.y = newY;
+                    this.initBoard();
+                    this.showWinMessage();
+                    return;
+                }
+
+                // Успешное движение
+                this.playerPos.x = newX;
+                this.playerPos.y = newY;
+                this.initBoard();
+                this.showNextMessage();
+            }
+
+            revealWall(x, y) {
+                this.revealedWalls.add(`${x},${y}`);
+            }
+
+            explodeBomb(x, y) {
+                this.explodedBombs.add(`${x},${y}`);
+            }
+
+            showNextMessage() {
+                this.isMoving = true;
+                this.messageEl.textContent = 'Следующий';
+                setTimeout(() => {
+                    this.messageEl.textContent = '';
+                    this.isMoving = false;
+                }, 2000);
+            }
+
+            showWinMessage() {
+                this.messageEl.textContent = 'molodci28';
+                this.isMoving = true;
+            }
+
+            restartGame() {
+                this.playerPos = { x: 4, y: 8 };
+                this.initBoard();
+                this.messageEl.textContent = 'Игра перезапущена';
+                setTimeout(() => {
+                    this.messageEl.textContent = '';
+                }, 2000);
+            }
+        }
+
+        // Запуск игры
+        window.addEventListener('DOMContentLoaded', () => {
+            new Game();
+        });
+    </script>
+</body>
+</html>
